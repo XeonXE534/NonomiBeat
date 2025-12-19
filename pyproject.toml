@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Project-Ibuki"
+version = "3.3.0"
+description = "Modern Terminal UI for anime streaming"
+authors = [{ name="XeonXE534", email="XeonXE1@proton.me" }]
+readme = "README.md"
+requires-python = ">=3.10"
