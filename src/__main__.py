@@ -3,7 +3,7 @@ import asyncio
 
 async def main():
     try:
-        app = NonomiBeat(patch_path="src/nonomi/patches/main.pd")
+        app = NonomiBeat(patch_path="src/nonomi/patches/main3.pd")
         await app.start()
 
     except KeyboardInterrupt:

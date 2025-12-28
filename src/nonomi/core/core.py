@@ -43,17 +43,16 @@ class NonomiBeat:
                 self.audio.send_brightness(brightness)
                 self.audio.send_hue(hue)
 
-                # Track selection
-                # track_id = self._select_track(brightness)
-                # if track_id != self._last_track:
-                #     self.audio.play_track(track_id)
-                #     self._last_track = track_id
-                #     logger.debug(f"Switched to track {track_id}")
-                #
-                # # Filter control (now actually used)
-                # cutoff = self._brightness_to_filter(brightness)
-                # self.audio.set_filter_cutoff(cutoff)
-                #
+                track_id = self._select_track(brightness)
+                if track_id != self._last_track:
+                    self.audio.play_track(track_id)
+                    self._last_track = track_id
+                    logger.debug(f"Switched to track {track_id}")
+
+
+                cutoff = self._brightness_to_filter(brightness)
+                self.audio.set_filter_cutoff(cutoff)
+
                 await asyncio.sleep(0.5)
 
         except Exception as e:
@@ -63,11 +62,12 @@ class NonomiBeat:
     @staticmethod
     def _select_track(brightness: float) -> int:
         """Map brightness to track ID (0-9)"""
-        return int(brightness * 9)
+        #return int(brightness * 6)
+        return 2
 
     @staticmethod
     def _brightness_to_filter(brightness: float) -> float:
         """Map brightness to lowpass filter cutoff"""
         min_freq = 500   # Hz
         max_freq = 8000  # Hz
-        return min_freq + (brightness * (max_freq - min_freq))
+        return 1000
