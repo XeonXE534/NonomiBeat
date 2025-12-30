@@ -1,7 +1,7 @@
 <div align="center">
     <img src="images/halo.png" alt="logo" />
     <br>
-    <img src="https://img.shields.io/badge/version-0.0.1--alpha-FF69B4?style=for-the-badge" />
+    <img src="https://img.shields.io/badge/version-0.1.0--alpha-FF69B4?style=for-the-badge" />
     <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Android-blue?style=for-the-badge" />
     <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=for-the-badge"/>
 </div>
