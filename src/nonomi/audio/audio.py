@@ -2,43 +2,37 @@ import threading
 import array
 import pylibpd as pd
 import pyaudio
-from ..utils.logger import get_logger
+from src.nonomi.utils.logger import get_logger, CStdoutCapturer
 
 logger = get_logger("AudioEngine")
 
 class AudioEngine:
     def __init__(self, patch_path, sample_rate=44100, block_size=64):
-        self.stream = None
-        self.pya = None
-        self.patch_handle = None
-        self.block_size = block_size # MUST be a multiple of 64
+        self.block_size = block_size
         self.patch_path = patch_path
         self.sample_rate = sample_rate
-        self._lock = threading.Lock()
-        self._running = False
 
-        # Pre-allocate exactly for stereo (2 channels)
-        # 64 samples * 2 channels * ticks
+        self.pya = None
+        self.stream = None
+        self.patch_handle = None
+
+        self._running = False
+        self._lock = threading.Lock()
         self.ticks = self.block_size // 64
         self._inbuf = array.array('h', [0] * (self.block_size * 2))
         self._outbuf = array.array('h', [0] * (self.block_size * 2))
+        self.cap = CStdoutCapturer()
 
     async def start(self):
-        # HARD RESET
-        pd.libpd_release()
+        """Start the audio engine and PD patch"""
+        # DEV NOTE: DON'T YOU FUCKING DARE TOUCH THE INIT SEQUENCE RETARD!
 
-        # Init must happen BEFORE opening the patch
+        pd.libpd_release()
+        pd.libpd_set_print_callback(self.cap.pd_print_callback)
         pd.libpd_init_audio(0, 2, self.sample_rate)
         pd.libpd_compute_audio(True)
-
-        import os
-        patch_dir = os.path.dirname(os.path.abspath(self.patch_path))
-        patch_file = os.path.basename(self.patch_path)
-
-        self.patch_handle = pd.libpd_open_patch(patch_file, patch_dir)
-        if not self.patch_handle:
-            print("FAILED TO OPEN PATCH (X_X)")
-            return
+        pd.libpd_add_to_search_path("src/assets")
+        self.patch_handle = pd.libpd_open_patch(self.patch_path)
 
         self.pya = pyaudio.PyAudio()
         self.stream = self.pya.open(
@@ -46,48 +40,45 @@ class AudioEngine:
             channels=2,
             rate=self.sample_rate,
             output=True,
-            # Use the same block size everywhere
             frames_per_buffer=self.block_size,
             stream_callback=self._audio_callback
         )
         self.stream.start_stream()
         self._running = True
-        info = self.pya.get_default_output_device_info()
-        print(f"!!! USING DEVICE: {info['name']} at {self.sample_rate}Hz")
+        print("AudioEngine online :3")
 
     def _audio_callback(self, in_data, frame_count, time_info, status):
-        # Calculate ticks based on what PyAudio actually gives us
-        current_ticks = frame_count // 64
+        """PyAudio callback to process audio through PD"""
+        #DEV NOTE: DON'T YOU FUCKING DARE TOUCH THIS RETARD!
 
+        current_ticks = frame_count // 64
         with self._lock:
-            # If current_ticks doesn't match our buffer, we have a problem
             pd.libpd_process_short(current_ticks, self._inbuf, self._outbuf)
 
         return self._outbuf.tobytes(), pyaudio.paContinue
 
-    def send_brightness(self, value):
+    def send_player(self, player, track):
         if self._running:
             with self._lock:
-                pd.libpd_float('brightness', float(value))
+                pd.libpd_float(f'LoadPlayer_{player}', float(track))
+
+    def crossfade(self, value):
+        if self._running:
+            with self._lock:
+                pd.libpd_float('Crossfade', float(value))
 
     def send_hue(self, value: float):
         if self._running:
             with self._lock:
-                pd.libpd_float('hue', float(value))
+                pd.libpd_float('Hue', float(value))
 
     def set_filter_cutoff(self, freq: float):
         if self._running:
             with self._lock:
-                pd.libpd_float('filter_cutoff', 2000.0)
-
-    def play_track(self, track_id: int):
-        """Tell PD which track to play (0-9)"""
-        if self._running:
-            with self._lock:
-                pd.libpd_float('track', float(track_id))
-                logger.debug(f"→ track: {track_id}")
+                pd.libpd_float('FilterCutoff', float(freq))
 
     async def stop(self):
+        """Stop the audio engine and PD patch"""
         self._running = False
         if self.stream:
             self.stream.stop_stream()

@@ -18,12 +18,12 @@ class CameraInput:
     async def start(self):
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
-            print("RIP: Camera won't open.")
+            print("Camera not found :(")
             return
 
         self._running = True
         asyncio.create_task(self._capture_loop())
-        print("Camera task spawned (^_^)v")
+        print("Camera task spawned :3")
 
     async def _capture_loop(self):
         while self._running:
@@ -32,7 +32,7 @@ class CameraInput:
                 ret, frame = self.cap.read()
 
             if not ret or frame is None:
-                print("Camera dropped a frame...")
+                print("Camera dropped a frame :/")
                 await asyncio.sleep(self.update_rate)
                 continue
 

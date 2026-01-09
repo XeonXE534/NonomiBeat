@@ -1,13 +1,19 @@
-from .nonomi.core.core import NonomiBeat
+from src.nonomi.core.core import NonomiBeat
 import asyncio
 
 async def main():
+    app = NonomiBeat(patch_path="src/nonomi/patches/main.pd")
     try:
-        app = NonomiBeat(patch_path="src/nonomi/patches/main3.pd")
         await app.start()
 
+    except asyncio.CancelledError:
+        pass
+
     except KeyboardInterrupt:
-        await app.stop()
+        pass
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt or asyncio.CancelledError:
+        print("Exiting…")
